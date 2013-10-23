@@ -89,9 +89,6 @@ void CL_ClipMoveToEntities ( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
 		if (!ent->solid)
 			continue;
 
-		if (ent->number == cl.playernum+1)
-			continue;
-
 		if (ent->solid == 31)
 		{	// special value for bmodel
 			cmodel = cl.model_clip[ent->modelindex];

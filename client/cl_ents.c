@@ -972,7 +972,7 @@ void CL_AddPacketEntities (frame_t *frame)
 			{
 				ent.skinnum = s1->skinnum;
 				ent.skin = NULL;
-				ent.model = cl.model_draw[s1->modelindex];
+ 				ent.model = cl.model_draw[s1->modelindex];
 			}
 		}
 
@@ -1022,9 +1022,6 @@ void CL_AddPacketEntities (frame_t *frame)
 
 		if (s1->number == cl.playernum+1)
 		{
-			ent.flags |= RF_VIEWERMODEL;	// only draw from mirrors
-			// FIXME: still pass to refresh
-
 			if (effects & EF_FLAG1)
 				V_AddLight (ent.origin, 225, 1.0, 0.1, 0.1);
 			else if (effects & EF_FLAG2)
@@ -1033,8 +1030,6 @@ void CL_AddPacketEntities (frame_t *frame)
 				V_AddLight (ent.origin, 225, 1.0, 1.0, 0.0);	//PGM
 			else if (effects & EF_TRACKERTRAIL)					//PGM
 				V_AddLight (ent.origin, 225, -1.0, -1.0, -1.0);	//PGM
-
-			continue;
 		}
 
 		// if set to invisible, skip
@@ -1356,6 +1351,8 @@ void CL_CalcViewValues (void)
 	centity_t	*ent;
 	frame_t		*oldframe;
 	player_state_t	*ps, *ops;
+	trace_t tr;
+	vec3_t trace_end;
 
 	// find the previous frame to interpolate from
 	ps = &cl.frame.playerstate;
@@ -1417,6 +1414,19 @@ void CL_CalcViewValues (void)
 
 	AngleVectors (cl.refdef.viewangles, cl.v_forward, cl.v_right, cl.v_up);
 
+	// Trace backwards and move camera.
+#define CAM_DISTANCE 100
+
+	// Get ending trace vector.
+	VectorMA(cl.refdef.vieworg, -CAM_DISTANCE, cl.v_forward, trace_end);
+	tr = CM_BoxTrace(cl.refdef.vieworg, trace_end, vec3_origin, vec3_origin, 0, MASK_SHOT);
+	VectorMA(cl.refdef.vieworg, -CAM_DISTANCE * tr.fraction, cl.v_forward, cl.refdef.vieworg);
+
+	// Move one pixel off the normal so we don't clip the wall.
+	if (tr.contents != 0) {
+		VectorMA(cl.refdef.vieworg, 5.0, tr.plane.normal, cl.refdef.vieworg);
+	}
+
 	// interpolate field of view
 	cl.refdef.fov_x = ops->fov + lerp * (ps->fov - ops->fov);
 
@@ -1425,7 +1435,7 @@ void CL_CalcViewValues (void)
 		cl.refdef.blend[i] = ps->blend[i];
 
 	// add the weapon
-	CL_AddViewWeapon (ps, ops);
+	//CL_AddViewWeapon (ps, ops);
 }
 
 /*
